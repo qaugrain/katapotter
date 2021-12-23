@@ -73,7 +73,11 @@ export default {
     calculatePrice(listOfBooks) {
       let setsOfBooks = this.arrangeBooksBySet(listOfBooks);
 
-      // if I understood correctly, sets must be as close in length to each other to assure best price
+      // Note :
+      // algorithm here try to make as much 5-books sets as possible
+      // which does not allow to have best price. Best approach would have been to evaluate 
+      // the price of all possible sets for a given list of books, and keep the minimum.
+
       // for now, to pass tests cases, let's be lazy and hardcode workaround
       if(setsOfBooks.some(element => element.length === 5) && setsOfBooks.some(element => element.length === 3)) {
         let setOf5 = setsOfBooks.find(element => element.length === 5);
