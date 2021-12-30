@@ -43,71 +43,116 @@ export default {
     arrangeBooks(listOfBooks) {
       // arrange books by titles
       let result = [];
+      // init empty result
+      this.series.forEach((book) => result.push([]));
+
       listOfBooks.forEach((book) => {
         let index = this.series.indexOf(book);
-        if (result[index] === undefined) {
-          result[index] = [];
-        }
-        result[index].push(book);
+        if (index > -1) result[index].push(book);
       });
-      return result.filter((element) => element !== undefined);
+
+      return result;
     },
-    arrangeBooksBySet(listOfBooks) {
-      // arrange books by sets, making biggest sets as possible
+    makeTuple(listOfBooks) {
+      // arranged list of books can be seen as a tuple
+      // index zero : number of first book
+      // index 1 : number of second book
+      // and so on
+      let result = [];
       let arrangedListOfBooks = this.arrangeBooks(listOfBooks);
-      let result = [];
-      while (arrangedListOfBooks.some((element) => element.length !== 0)) {
-        result.push(this.makeSet(arrangedListOfBooks)); //arrangedListOfBooks is mutated
-      }
+      arrangedListOfBooks.forEach((element) => result.push(element.length));
       return result;
     },
-    makeSet(arrangedListOfBooks) {
-      let result = [];
-      arrangedListOfBooks.forEach((element) => {
-        if (element.length > 0) {
-          result.push(element.pop());
+    calculatePriceOfTuple(tuple) {
+      // NOTE : does not work, algo can't see optimal subsets
+      
+      // recursive method
+
+      // stop cases, apply discounts
+      if (tuple.every((element) => element === 0 || element === 1)) {
+        let numberOfBooksInSet = tuple.reduce((a, b) => a + b);
+        switch (numberOfBooksInSet) {
+          case 0:
+            return 0;
+          case 1:
+            return this.basePrice;
+          case 2:
+            return this.basePrice * 2 * 0.95; // 5% discount
+          case 3:
+            return this.basePrice * 3 * 0.9; // 10% discount
+          case 4:
+            return this.basePrice * 4 * 0.8; // 20% discount
+          case 5:
+            return this.basePrice * 5 * 0.75; // 25% discount
+        }
+      }
+
+      // recursion
+      let arrayOfNextTuples = [
+        [tuple[0] - 1, tuple[1], tuple[2], tuple[3], tuple[4]],
+        [tuple[0], tuple[1] - 1, tuple[2], tuple[3], tuple[4]],
+        [tuple[0], tuple[1], tuple[2] - 1, tuple[3], tuple[4]],
+        [tuple[0], tuple[1], tuple[2], tuple[3] - 1, tuple[4]],
+        [tuple[0], tuple[1], tuple[2], tuple[3], tuple[4] - 1],
+      ];
+
+      // only calculate price if tuple is valid (no negative values)
+      let minArray = [];
+      arrayOfNextTuples.forEach((nextTuple, index) => {
+        // pass tuple with negative values
+        if (!nextTuple.some((element) => element < 0)) {
+          let finalTuple = [0, 0, 0, 0, 0];
+          finalTuple[index] = 1;
+          minArray.push(
+            this.calculatePriceOfTuple(nextTuple) +
+              this.calculatePriceOfTuple(finalTuple)
+          );
         }
       });
-      return result;
+
+      return Math.min(...minArray); // minimum price
     },
     calculatePrice(listOfBooks) {
-      let setsOfBooks = this.arrangeBooksBySet(listOfBooks);
+      let tuple = this.makeTuple(listOfBooks);
+      let price = this.prec(tuple);
+      return price;
+    },
+    anotherCalculatePriceOfTuple(tuple) {
+      //Notes : does not work, same problem as first impl without recursion
 
-      // Note :
-      // algorithm here try to make as much 5-books sets as possible
-      // which does not allow to have best price. Best approach would have been to evaluate 
-      // the price of all possible sets for a given list of books, and keep the minimum.
+      // recursive method
 
-      // for now, to pass tests cases, let's be lazy and hardcode workaround
-      if(setsOfBooks.some(element => element.length === 5) && setsOfBooks.some(element => element.length === 3)) {
-        let setOf5 = setsOfBooks.find(element => element.length === 5);
-        let setOf3 = setsOfBooks.find(element => element.length === 3);
-        setOf3.push(setOf5.pop());
+      // stop cases, apply discounts
+      if (tuple.every((element) => element === 0 || element === 1)) {
+        let numberOfBooksInSet = tuple.reduce((a, b) => a + b);
+        switch (numberOfBooksInSet) {
+          case 0:
+            return 0;
+          case 1:
+            return this.basePrice;
+          case 2:
+            return this.basePrice * 2 * 0.95; // 5% discount
+          case 3:
+            return this.basePrice * 3 * 0.9; // 10% discount
+          case 4:
+            return this.basePrice * 4 * 0.8; // 20% discount
+          case 5:
+            return this.basePrice * 5 * 0.75; // 25% discount
+        }
       }
 
-      let price = 0;
-      setsOfBooks.forEach((element) => {
-        switch (element.length) {
-          case 0:
-            break;
-          case 1:
-            price = price + this.basePrice;
-            break;
-          case 2:
-            price = price + this.basePrice * 2 * 0.95; // 5% discount
-            break;
-          case 3:
-            price = price + this.basePrice * 3 * 0.9; // 10% discount
-            break;
-          case 4:
-            price = price + this.basePrice * 4 * 0.8; // 20% discount
-            break;
-          case 5:
-            price = price + this.basePrice * 5 * 0.75; // 25% discount
-            break;
+      // maybe simply removing one book at all index is enough for tests cases...
+      let subset = [0, 0, 0, 0, 0];
+      let nextTuple = [];
+      tuple.forEach((n, index) => {
+        nextTuple[index] = n;
+        if (n > 1) {
+          subset[index]++;
+          nextTuple[index]--;
         }
       });
-      return price;
+
+      return this.anotherCalculatePriceOfTuple(nextTuple) + this.anotherCalculatePriceOfTuple(subset);
     },
   },
 };
